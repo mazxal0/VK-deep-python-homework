@@ -4,7 +4,7 @@ import typing
 
 
 class NotAliveError(Exception):
-    """"""
+    """Custom error which raise when service is not alive"""
     pass
 
 
@@ -24,10 +24,15 @@ def circuit_breaker(
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> typing.Any:
             try:
+                if len(history_calls) >= error_count:
+                    current_slice = list(history_calls)[-error_count:]
+                    if all(state is False for state in current_slice):
+                        raise NotAliveError
+
                 res = func(*args, **kwargs)
                 history_calls.append(True)
                 return res
-            except tuple(actual_network_errors):
+            except actual_network_errors:
                 history_calls.append(False)
                 raise
             except Exception:
