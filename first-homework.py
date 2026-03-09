@@ -1,6 +1,8 @@
 import collections
 import functools
 import typing
+import time
+from itertools import islice
 
 
 class NotAliveError(Exception):
@@ -14,6 +16,11 @@ def circuit_breaker(
         network_errors:typing.Optional[list[type[Exception]]]=None,
         sleep_time_sec:int=10
 ) -> typing.Callable:
+    if state_count <= 10:
+        raise ValueError("state_count must be greater than 10")
+    if error_count >= 10:
+        raise ValueError("error_count must be less than 10")
+
     def decorator(func: typing.Callable) -> typing.Callable:
         actual_network_errors = tuple(network_errors) if network_errors is not None else None
         if actual_network_errors is None:
@@ -25,9 +32,12 @@ def circuit_breaker(
         def wrapper(*args, **kwargs) -> typing.Any:
             try:
                 if len(history_calls) >= error_count:
-                    current_slice = list(history_calls)[-error_count:]
+                    current_slice = list(islice(history_calls, len(history_calls)-error_count, None))
                     if all(state is False for state in current_slice):
                         raise NotAliveError
+
+                if history_calls[-1] is False:
+                    time.sleep(sleep_time_sec)
 
                 res = func(*args, **kwargs)
                 history_calls.append(True)
