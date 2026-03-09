@@ -22,10 +22,9 @@ def circuit_breaker(
         raise ValueError("error_count must be less than 10")
 
     def decorator(func: typing.Callable) -> typing.Callable:
-        actual_network_errors = tuple(network_errors) if network_errors is not None else None
-        if actual_network_errors is None:
-            actual_network_errors = tuple([ConnectionError, TimeoutError])
-
+        actual_network_errors = tuple(network_errors) if network_errors is not None else (
+            ConnectionError, TimeoutError
+        )
         history_calls = collections.deque(maxlen=state_count)
 
         @functools.wraps(func)
@@ -36,7 +35,7 @@ def circuit_breaker(
                     if all(state is False for state in current_slice):
                         raise NotAliveError
 
-                if history_calls[-1] is False:
+                if history_calls and history_calls[-1] is False:
                     time.sleep(sleep_time_sec)
 
                 res = func(*args, **kwargs)
@@ -45,7 +44,7 @@ def circuit_breaker(
             except actual_network_errors:
                 history_calls.append(False)
                 raise
-            except Exception:
-                raise
+
         return wrapper
+
     return decorator
