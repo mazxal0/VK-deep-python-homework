@@ -16,6 +16,7 @@ def circuit_breaker(
         network_errors:typing.Optional[list[type[Exception]]]=None,
         sleep_time_sec:int=10
 ) -> typing.Callable:
+    """This is decorator which help and block the calls of function with limits and particular errors"""
     if state_count <= 10:
         raise ValueError("state_count must be greater than 10")
     if error_count >= 10:
@@ -33,7 +34,7 @@ def circuit_breaker(
                 if len(history_calls) >= error_count:
                     current_slice = list(islice(history_calls, len(history_calls)-error_count, None))
                     if all(state is False for state in current_slice):
-                        raise NotAliveError
+                        raise NotAliveError('Service is not alive')
 
                 if history_calls and history_calls[-1] is False:
                     time.sleep(sleep_time_sec)
