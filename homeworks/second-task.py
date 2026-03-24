@@ -30,6 +30,24 @@ class Stack:
             raise IndexError("Stack index out of range")
         return self._stack[index]
 
+    def __enter__(self) -> "Stack":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> bool:
+        self._stack.clear()
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Stack):
+            return NotImplemented
+
+        if len(self) != len(other):
+            return False
+
+        for i in range(len(self)):
+            if self[i] != other[i]:
+                return False
+        return True
+
     def push(self, value: Any) -> None:
         self._stack.append(value)
 
