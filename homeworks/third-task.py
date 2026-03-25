@@ -23,21 +23,19 @@ class ValidatedProperty(TypedProperty):
         self._min = _min
         self._min_length = min_length
 
-    def __get__(self, instance, value) -> Any:
+    def __get__(self, instance, owner) -> Any:
         return instance.__dict__[self._name]
 
     def __set__(self, instance, value) -> None:
-        if not isinstance(value, self._type):
-            raise TypeError(f'{self._name} should be type like: {self._type}')
-
         if isinstance(value, int):
-            if self._min and value < self._min:
+            if self._min is not None and value < self._min:
                 raise ValueError(f'{self._name} must be >= {self._min}')
-            if self._max and value > self._max:
+            if self._max is not None and value > self._max:
                 raise ValueError(f'{self._name} must be <= {self._max}')
 
         if isinstance(value, str):
-            if self._min_length and len(value) < self._min_length:
+            if self._min_length is not None and len(value) < self._min_length:
                 raise ValueError(f'len of {self._name} must be >= {self._min_length}')
 
-        instance.__dict__[self._name] = value
+        super().__set__(instance, value)
+
