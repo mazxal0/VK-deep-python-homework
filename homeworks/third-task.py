@@ -9,6 +9,7 @@ class TypedProperty:
         self._name = name
 
     def __get__(self, instance, owner) -> Any:
+        print(instance.__dict__)
         return instance.__dict__[self._name]
 
     def __set__(self, instance, value) -> None:
@@ -24,7 +25,7 @@ class ValidatedProperty(TypedProperty):
         self._min_length = min_length
 
     def __get__(self, instance, owner) -> Any:
-        return instance.__dict__[self._name]
+        return super().__get__(instance, owner)
 
     def __set__(self, instance, value) -> None:
         if isinstance(value, int):
@@ -39,3 +40,29 @@ class ValidatedProperty(TypedProperty):
 
         super().__set__(instance, value)
 
+
+class RegistryMeta(type):
+    registry = dict()
+
+    def __new__(cls, name, bases, namespace):
+        if name in cls.registry:
+            raise AttributeError(f'class {name} has already been registered')
+
+        new_class = super().__new__(cls, name, bases, namespace);
+
+        cls.registry[name] = new_class
+        return new_class
+
+
+class ModelMeta(RegistryMeta):
+    def __new__(cls, name, bases, namespace):
+        _fields = dict()
+        for attr, value in namespace.items():
+            if isinstance(value, TypedProperty):
+                _fields[attr] = value
+        namespace['_fields'] = dict(_fields)
+        return super().__new__(cls, name, bases, namespace)
+
+
+class Model(metaclass=ModelMeta):
+    pass
